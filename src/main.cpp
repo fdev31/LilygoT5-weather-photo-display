@@ -1,15 +1,22 @@
 #include <Arduino.h>
 #include <WiFi.h>
+// esp
+#include "esp_himem.h"
+#include "esp_spiram.h"
+// battery
+#include <driver/adc.h>
+#include "esp_adc_cal.h"
+// screen
+#include "epd_driver.h"
+#include "epd_highlevel.h"
+// project's
 #include "display.h"
 #include "garbage.h"
 #include "wttr.h" // weather info, check wttr.in
 #include "configserver.h"
 #include "configuration.h"
-#include "epd_driver.h"
-#include "epd_highlevel.h"
 #include "background.h"
-#include "esp_himem.h"
-#include "esp_spiram.h"
+
 
 uint64_t WAKEUP_INTERVAL = (uint64_t) 1000*1000*3600*INTERVAL;
 const char* ntpServer = "pool.ntp.org";
@@ -30,6 +37,20 @@ EpdRect fullscreenArea = {
     .width = EPD_WIDTH,
     .height = EPD_HEIGHT,
 };
+
+/**
+ * Correct the ADC reference voltage. Was in example of lilygo epd47 repository to calc battery percentage
+ * (DavidM42)
+*/
+void correct_adc_reference()
+{
+    esp_adc_cal_characteristics_t adc_chars;
+    esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
+    if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
+        Serial.printf("eFuse Vref:%u mV", adc_chars.vref);
+        vref = adc_chars.vref;
+    }
+}
 
 void basic_init() {
   Serial.begin(115200);
@@ -213,6 +234,7 @@ void setup()
 {
   basic_init();
   display_init();
+  epd_poweron();
   epd_fullclear(&hl, temperature);
   if (!config.valid || WiFi.waitForConnectResult() != WL_CONNECTED)
   {
@@ -220,10 +242,11 @@ void setup()
     start_settings_mode();
     settings_mode = true;
   } else {
-    delay(1000);
+    delay(50);
     time_init();
     epd_copy_to_framebuffer(fullscreenArea, background_data, epd_hl_get_framebuffer(&hl));
     show_weather();
+    correct_adc_reference();
     show_battery_level();
     show_garbage();
     epd_hl_update_screen(&hl, MODE_GC16, temperature);
