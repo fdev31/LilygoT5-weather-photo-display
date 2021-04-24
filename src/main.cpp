@@ -66,17 +66,20 @@ void basic_init() {
   // Read SSID & Password from EEPROM
   config = init_config();
   if (config.valid) {
+    Serial.println("Connecting to wifi");
     WiFi.begin(config.ssid, config.pass);
   }
 }
 
 void display_init() {
+  Serial.println("Open display");
   epd_init(EPD_OPTIONS_DEFAULT);
   hl = epd_hl_init(EPD_BUILTIN_WAVEFORM);
   fb = epd_hl_get_framebuffer(&hl);
 }
 
 void time_init() {
+  Serial.println("Sync time");
   // NTP Setup
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
@@ -94,15 +97,16 @@ double get_battery_level()
 
 void show_battery_level()
 {
+  Serial.println("Show battery");
   double level = get_battery_level();
   int w = (level - 3.0)*47.5; // 57 pixels width, 1.2 == 100%
   if (w > 57) w = 57;
   else if (w < 0) w = 0;
   char text[50];
-  display.setFontType(1);
   sprintf(text, "%.2fV", level);
-  display.setCursor(BATTERY_POS, 36);
-  display.print(text);
+  int x = EPD_WIDTH - 100;
+  int y = 40;
+  epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
   if (w) {
     EpdRect battery_rect = {.x = 870, .y = 17, .width = w, .height = 15};
     epd_fill_rect(battery_rect, 1, fb);
@@ -110,6 +114,7 @@ void show_battery_level()
 }
 
 void show_garbage() {
+  Serial.println("Show garbage pickup");
   int x, y;
   GarbageDays gd = check_garbage(timeinfo);
   //    drawIcon(EPD_WIDTH - SMALL_ICON, EPD_HEIGHT - SMALL_ICON, (const char **)img, SMALL_ICON, SMALL_ICON);
@@ -124,15 +129,19 @@ void show_garbage() {
   free_garbage(&gd);
 }
 
-void drawChart(int x, int y, int initVal, int increment, T_Snap previsions[], int (*getFunc)(int, T_Snap[])) {
+void drawWeatherChart(int x, int y, int initVal, int increment, T_Snap previsions[], int (*getFunc)(int, T_Snap[])) {
   int i=0;
   int prevVal = y-initVal;
+  int thickness = 1;
 
-  epd_draw_line(x, prevVal, x + 3*7*increment, prevVal, 127, fb);
-  for (int daycount=0; daycount<3; daycount++) {
-    for (int snapcount=0; snapcount<7; snapcount++) {
-      int val = y-getFunc(i, previsions);
-      epd_draw_line(x, prevVal, x+increment, val, 0, fb);
+  epd_draw_line(x, prevVal, x + FORECAST_NB_DAYS*FORECAST_DAILY_SNAPS*increment, prevVal, 127, fb);
+  for (int daycount=0; daycount<FORECAST_NB_DAYS; daycount++) {
+    for (int snapcount=0; snapcount<FORECAST_DAILY_SNAPS; snapcount++) {
+      int val = getFunc(i, previsions);
+      val = y-val;
+      epd_draw_line(x, prevVal -1, x + increment, val -1, 15, fb);
+      for (int i=0; i<thickness; i++)
+        epd_draw_line(x, prevVal+i, x + increment, val+i, 0, fb);
       prevVal = val;
       x+=increment;
       i++;
@@ -141,93 +150,84 @@ void drawChart(int x, int y, int initVal, int increment, T_Snap previsions[], in
 }
 
 void show_weather() {
+  Serial.println("Show weather");
   WeatherSnapshot weather = getWeather();
+  if(!weather.title) return;
+  Serial.println("Received weather data");
   int x = BATTERY_POS/2, y = 70;
   char text[50];
 
   epd_write_string(&titlefont, weather.title, &x, &y, fb, &centeredStyle);
 
-  // right aligned captions
-  int sz=10;
+  x=6;
+  y = EPD_HEIGHT-6;
+  EpdFontProperties dateStyle = { WHITE, 8, '?', EPD_DRAW_ALIGN_LEFT};
+  epd_write_string(&stdfont, weather.observationDate, &x, &y, fb, &dateStyle);
+  y = EPD_HEIGHT-6;
+  x += 100;
+  epd_write_string(&stdfont, weather.moonphase, &x, &y, fb, &dateStyle);
 
+  int topMargin = 120;
+  int leftMargin = 65;
 
-  x = 150; y = 120;
-  for (int daycount=0; daycount<3; daycount++) {
-    epd_draw_line(x, y-20, x, y+130, 127, fb);
-    x+= 7*sz;
+  int segmentSize=10;
+  int chartSpacing = 60;
+  int chartLeftMargin = 150;
+
+  // background
+  x = chartLeftMargin; y = topMargin;
+  for (int daycount=1; daycount<FORECAST_NB_DAYS; daycount++) {
+    epd_draw_line(x, y, x, y+(chartSpacing*3), 50, fb);
+    x+= FORECAST_DAILY_SNAPS*segmentSize;
   }
-  x = 65;
+  // 1st
+  x = leftMargin;
   weather.now.getTemperature((char *)&text);
   epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
-  drawChart(150, 120,
+  drawWeatherChart(chartLeftMargin, topMargin,
             weather.now.temperature*2,
-            sz, weather.previsions,
+            segmentSize, weather.previsions,
             [](int i, T_Snap previsions[]) {return previsions[i].temperature*2;}
             );
-  x = 65; y = 180;
+  // 2nd
+  x = leftMargin; y = topMargin + chartSpacing;
   weather.now.getWind((char *)&text);
   epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
-  drawChart(150, 230,
+  drawWeatherChart(chartLeftMargin, topMargin + chartSpacing,
             weather.now.wind,
-            sz, weather.previsions,
+            segmentSize, weather.previsions,
             [](int i, T_Snap previsions[]) {return previsions[i].wind;}
             );
-  x = 65; y = 230;
+  // 3rd
+  x = leftMargin; y = topMargin + (chartSpacing*2);
   weather.now.getCloud((char *)&text);
   epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
-  drawChart(150, 185,
+  drawWeatherChart(chartLeftMargin, topMargin + (chartSpacing*2),
             weather.now.cloudcover/2,
-            sz, weather.previsions,
+            segmentSize, weather.previsions,
             [](int i, T_Snap previsions[]) {return previsions[i].cloudcover/2;}
             );
-#if 0
-      y = 120;
-  int i=0;
-  x += 100;
-  int prevVal = y - (2*weather.now.temperature);
-  for (int daycount=0; daycount<3; daycount++) {
-    epd_draw_line(x, y-20, x, y+130, 15, fb);
-    for (int snapcount=0; snapcount<7; snapcount++) {
-      int val = y-(weather.previsions[i].temperature*2);
-      epd_draw_line(x, prevVal, x+sz, val, 0, fb);
-      prevVal = val;
-      x+=sz;
-      i++;
-    }
-  }
-
-  x = 65; y = 180;
-  weather.now.getWind((char *)&text);
+  // 4th
+  x = leftMargin; y = topMargin + (chartSpacing*3);
+  weather.now.getPrecipitation((char *)&text);
   epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
-  y = 180;
-  i = 0;
-  x += 100;
-  prevVal = y - weather.now.wind;
-  for (int daycount=0; daycount<3; daycount++)
-    for (int snapcount=0; snapcount<7; snapcount++) {
-      int val = y-weather.previsions[i].wind;
-      epd_draw_line(x, prevVal, x+sz, val, 0, fb);
-      prevVal = val;
-      x+=sz;
-      i++;
-    }
-
-  x = 65; y = 230;
-  weather.now.getCloud((char *)&text);
+  drawWeatherChart(chartLeftMargin, topMargin + (chartSpacing*3),
+            weather.now.precipitation*10,
+            segmentSize, weather.previsions,
+            [](int i, T_Snap previsions[]) {return int(previsions[i].precipitation*10.0);}
+            );
+  /*
+  // 5th
+  x = leftMargin; y = topMargin + (chartSpacing*4);
+  weather.now.getHumidity((char *)&text);
   epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
-  y = 230;
-  i = 0;
-  x += 100;
-  prevVal = y - (weather.now.cloudcover / 2);
-  for (int daycount=0; daycount<3; daycount++)
-    for (int snapcount=0; snapcount<7; snapcount++) {
-      int val = y-(weather.previsions[i].cloudcover/2);
-      epd_draw_line(x, prevVal, x+sz, val, 0, fb);
-      prevVal = val;
-      x+=sz;
-      i++;
-    }
-#endif
+  drawWeatherChart(chartLeftMargin, topMargin + (chartSpacing*4),
+            weather.now.humidity/2,
+            segmentSize, weather.previsions,
+            [](int i, T_Snap previsions[]) {return previsions[i].humidity/2;}
+            );
+            */
+  cleanupWeatherData(weather);
 }
 
 void setup()
@@ -235,15 +235,16 @@ void setup()
   basic_init();
   display_init();
   epd_poweron();
-  epd_fullclear(&hl, temperature);
   if (!config.valid || WiFi.waitForConnectResult() != WL_CONNECTED)
   {
     Serial.println("Invalid configuration or no connexion, running settings...");
+    epd_fullclear(&hl, temperature);
     start_settings_mode();
     settings_mode = true;
   } else {
     delay(50);
     time_init();
+    epd_fullclear(&hl, temperature);
     epd_copy_to_framebuffer(fullscreenArea, background_data, epd_hl_get_framebuffer(&hl));
     show_weather();
     correct_adc_reference();
