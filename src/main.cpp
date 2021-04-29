@@ -16,16 +16,21 @@
 #include "configserver.h"
 #include "configuration.h"
 
-// images
-
+// icons
+#ifdef ENABLE_BATTERY_IMAGE
 #include "images/battery.h"
+#endif
+#ifdef ENABLE_GARBAGE
 #include "images/paper_icon.h"
 #include "images/recycle_icon.h"
+#endif
 
+#ifdef ENABLE_WEATHER
 #include "images/temp_icon.h"
 #include "images/wind_icon.h"
 #include "images/cloud_icon.h"
 #include "images/rain_icon.h"
+#endif
 //#include "images/humid_icon.h"
 
 uint64_t WAKEUP_INTERVAL = (uint64_t) 1000*1000*3600*INTERVAL;
@@ -41,20 +46,11 @@ Configuration config;
 #define BATT_PIN            36
 #define BATTERY_POS 765
 
-#include "images/wallpaper1.h"
-#include "images/wallpaper2.h"
-#include "images/wallpaper3.h"
-#include "images/wallpaper4.h"
+#ifdef ENABLE_BACKGROUND
+#define NB_BACKGROUNDS sizeof(backgrounds)/sizeof(backgrounds[0])
+#endif
 
-const uint8_t *backgrounds[] = {
-  wallpaper1_data,
-  wallpaper2_data,
-  wallpaper3_data,
-  wallpaper4_data,
-};
-
-#define NB_BACKGROUNDS 4
-
+#ifdef ENABLE_MOON_PHASE_IMAGE
 #include "images/moon_first_q.h"
 #include "images/moon_full.h"
 #include "images/moon_last_q.h"
@@ -74,7 +70,7 @@ const uint8_t *moon_phases[] = {
   moon_last_q_data,
   moon_wan_cre_data
 };
-
+#endif
 
 EpdRect fullscreenArea = {
     .x = 0,
@@ -188,15 +184,19 @@ void show_battery_level()
   int x = BATTERY_X_POSITION;
   int y = 35 + BATTERY_Y_POSITION;
 
+#ifdef ENABLE_BATTERY_IMAGE
   drawImage(x+5, BATTERY_Y_POSITION, battery_width, battery_height, battery_data);
-
-  write_string_with_outline(&stdfont, text, &x, &y, &rightAlignedStyle);
   if (w) {
     EpdRect battery_rect = {.x = BATTERY_X_POSITION+10, .y = 5+BATTERY_Y_POSITION, .width = w, .height = 30 };
     epd_fill_rect(battery_rect, 1, fb);
   }
+#endif
+#ifdef ENABLE_BATTERY_TEXT
+  write_string_with_outline(&stdfont, text, &x, &y, &rightAlignedStyle);
+#endif
 }
 
+#ifdef ENABLE_GARBAGE
 void show_garbage() {
   Serial.println("Show garbage pickup");
   int x, y;
@@ -214,7 +214,9 @@ void show_garbage() {
   write_string_with_outline(&stdfont, gd.std, &x, &y, &leftAlignedStyle);
   free_garbage(&gd);
 }
+#endif
 
+#ifdef ENABLE_WEATHER
 void drawWeatherChart(int x, int y, int initVal, int increment, T_Snap previsions[], int (*getFunc)(int, T_Snap[])) {
   int i=0;
   int prevVal = y-initVal;
@@ -252,8 +254,12 @@ void show_weather() {
   write_string_with_outline(&stdfont, weather.observationDate, &x, &y, &dateStyle);
   y = EPD_HEIGHT-MOON_PHASES_BOTTOM_MARGIN;
   x += MOON_PHASES_LEFT_MARGIN;
+  #ifdef ENABLE_MOON_PHASE_TEXT
   write_string_with_outline(&stdfont, weather.moonphase, &x, &y, &dateStyle);
+  #endif
+  #ifdef ENABLE_MOON_PHASE_IMAGE
   drawImage(WEATHER_MOON_X_POS, WEATHER_MOON_Y_POS, moon_new_width, moon_new_height, moon_phases[weather.moonphaseIndex]);
+  #endif
 
   int topMargin = WEATHER_TOP_MARGIN;
   int leftMargin = WEATHER_LEFT_MARGIN;
@@ -316,6 +322,7 @@ void show_weather() {
             );
   cleanupWeatherData(weather);
 }
+#endif
 
 void setup()
 {
@@ -332,13 +339,21 @@ void setup()
     delay(50);
     time_init();
     epd_fullclear(&hl, temperature);
+#ifdef ENABLE_BACKGROUND
     int i = random(0, NB_BACKGROUNDS);
     Serial.print("Background:");
     Serial.println(i);
     epd_copy_to_framebuffer(fullscreenArea, backgrounds[i], fb);
+#else
+    epd_hl_set_all_white(&hl);
+#endif
+#ifdef ENABLE_WEATHER
     show_weather();
+#endif
+#ifdef ENABLE_BATTERY
     correct_adc_reference();
     show_battery_level();
+#endif
 #ifdef ENABLE_GARBAGE
     show_garbage();
 #endif

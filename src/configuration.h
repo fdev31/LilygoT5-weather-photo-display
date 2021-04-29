@@ -1,8 +1,40 @@
 // Refresh every "INTERVAL" hours
 #define INTERVAL 2
 
-// optional features
-//#define ENABLE_GARBAGE 1
+// feature switches
+
+#define ENABLE_BACKGROUND
+
+#define ENABLE_WEATHER
+
+#define ENABLE_MOON_PHASE_IMAGE
+#define ENABLE_MOON_PHASE_TEXT
+
+#define ENABLE_BATTERY
+#ifdef ENABLE_BATTERY
+#define ENABLE_BATTERY_TEXT
+#define ENABLE_BATTERY_IMAGE
+#endif
+
+//#define ENABLE_GARBAGE
+
+#ifdef ENABLE_BACKGROUND
+
+#include "images/wallpaper1.h"
+#include "images/wallpaper2.h"
+#include "images/wallpaper3.h"
+#include "images/wallpaper4.h"
+
+const uint8_t *backgrounds[] = {
+  wallpaper1_data,
+  wallpaper2_data,
+  wallpaper3_data,
+  wallpaper4_data,
+};
+#endif
+
+// Layout / positions
+
 #define GARBAGE_X_POSITION 912
 #define GARBAGE_Y_POSITION 460
 
