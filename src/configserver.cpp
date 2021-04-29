@@ -47,6 +47,10 @@ void index_html() {
     }
 }
 
+void resetX(int *x) {
+    *x = 10;
+}
+
 void start_settings_mode() {
     const char* ssid = "Weather-paper";  // Enter SSID here
     const char* password = "12345678";  //Enter Password here
@@ -58,25 +62,30 @@ void start_settings_mode() {
     WiFi.persistent(false);
     WiFi.softAP(ssid, password);
 
-    display.setCursor(10, 50);
-    display.setFontType(1);
-    display.println("Connection failed, please connect your wifi:\n");
-    display.print("Access point: ");
-    display.setFontType(2);
-    display.println(ssid);
-    display.setFontType(1);
-    display.print("Password: ");
-    display.setFontType(2);
-    display.println(password);
-    display.setFontType(1);
-    display.println("... and then open:");
-    display.setFontType(0);
-    display.println("http://192.168.1.1/");
-    display.setFontType(1);
-    display.setCursor(10, EPD_HEIGHT - 10);
-    display.println("... to enter your local WiFi credentials");
-    display.update();
-    delay(2000);
+    int x, y=30;
+    resetX(&x);
+
+    EpdFontProperties fontStyle = {
+        (uint8_t)0, //fg
+        7,          //bg
+        '?',        // fallback
+        (EpdFontFlags)0};
+
+    epd_write_string(&stdfont, "Connection failed, please connect your wifi:", &x, &y, fb, &fontStyle);
+    resetX(&x);
+    epd_write_string(&stdfont, "Access point:", &x, &y, fb, &fontStyle);
+    resetX(&x);
+    epd_write_string(&titlefont, ssid, &x, &y, fb, &fontStyle);
+    resetX(&x);
+    epd_write_string(&stdfont, "Password:", &x, &y, fb, &fontStyle);
+    resetX(&x);
+    epd_write_string(&titlefont, password, &x, &y, fb, &fontStyle);
+    resetX(&x);
+    epd_write_string(&stdfont, "... and then open:", &x, &y, fb, &fontStyle);
+    resetX(&x);
+    epd_write_string(&OpenSans24, "http://192.168.1.1/", &x, &y, fb, &fontStyle);
+    resetX(&x);
+    epd_write_string(&stdfont, "... to enter your local WiFi credentials", &x, &y, fb, &fontStyle);
     WiFi.softAPConfig(local_ip, gateway, subnet);
     server.on("/", index_html);
     server.begin();

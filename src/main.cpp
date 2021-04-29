@@ -88,45 +88,12 @@ void correct_adc_reference()
     esp_adc_cal_characteristics_t adc_chars;
     esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
     if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
-        Serial.printf("eFuse Vref:%u mV", adc_chars.vref);
         vref = adc_chars.vref;
     }
 }
-void write_string_with_outline(const EpdFont *font, const char *text, int *x, int *y, const EpdFontProperties *props) {
-  int xx = *x-2;
-  int yy = *y-2;
-
-  EpdFontProperties backProps = EpdFontProperties(*props);
-
-  if (props->fg_color == BLACK) {
-    backProps.fg_color = WHITE;
-  } else {
-    backProps.fg_color = BLACK;
-  }
-
-    epd_write_string(font, text, &xx, &yy, fb, &backProps);
-    xx = *x+2;
-    yy = *y+2;
-    epd_write_string(font, text, &xx, &yy, fb, &backProps);
-
-    xx = *x + 2;
-    yy = *y - 2;
-    epd_write_string(font, text, &xx, &yy, fb, &backProps);
-
-    xx = *x - 2;
-    yy = *y + 2;
-    epd_write_string(font, text, &xx, &yy, fb, &backProps);
-
-    epd_write_string(font, text, x, y, fb, props);
-}
 
 void basic_init() {
-  Serial.begin(115200);
-  if (psramInit()) {
-    Serial.println("\nThe PSRAM is correctly initialized");
-  } else {
-    Serial.println("\nPSRAM does not work");
-  }
+  psramInit();
   isMaintenanceWakup = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER;
   // WiFi setup
   WiFi.mode(WIFI_STA);
@@ -134,25 +101,21 @@ void basic_init() {
   // Read SSID & Password from EEPROM
   config = init_config();
   if (config.valid) {
-    Serial.println("Connecting to wifi");
     WiFi.begin(config.ssid, config.pass);
   }
 }
 
 void display_init() {
-  Serial.println("Open display");
   epd_init(EPD_OPTIONS_DEFAULT);
   hl = epd_hl_init(EPD_BUILTIN_WAVEFORM);
   fb = epd_hl_get_framebuffer(&hl);
 }
 
 void time_init() {
-  Serial.println("Sync time");
   // NTP Setup
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
   while (!getLocalTime(&timeinfo)) {
-    Serial.println("Error getting time, restarting");
     esp_restart();
   }
 }
@@ -165,7 +128,6 @@ double get_battery_level()
 
 void show_battery_level()
 {
-  Serial.println("Show battery");
   double level = get_battery_level();
   int w = (level - 3.0)*47.5; // 57 pixels width, 1.2 == 100%
   if (w > 57) w = 57;
@@ -189,7 +151,6 @@ void show_battery_level()
 
 #ifdef ENABLE_GARBAGE
 void show_garbage() {
-  Serial.println("Show garbage pickup");
   int x, y;
   GarbageDays gd = check_garbage(timeinfo);
   //    drawIcon(EPD_WIDTH - SMALL_ICON, EPD_HEIGHT - SMALL_ICON, (const char **)img, SMALL_ICON, SMALL_ICON);
@@ -230,10 +191,8 @@ void drawWeatherChart(int x, int y, int initVal, int increment, T_Snap prevision
 }
 
 void show_weather() {
-  Serial.println("Show weather");
   WeatherSnapshot weather = getWeather();
   if(!weather.title) return;
-  Serial.println("Received weather data");
   int x = BATTERY_POS/2, y = 70;
   char text[50];
 
@@ -321,8 +280,6 @@ void setup()
   display_init();
   if (!config.valid || WiFi.waitForConnectResult() != WL_CONNECTED)
   {
-    Serial.println("Invalid configuration or no connexion, running settings...");
-    epd_poweron();
     epd_fullclear(&hl, temperature);
     start_settings_mode();
     settings_mode = true;
@@ -332,8 +289,6 @@ void setup()
     epd_fullclear(&hl, temperature);
 #ifdef ENABLE_BACKGROUND
     int i = random(0, NB_BACKGROUNDS);
-    Serial.print("Background:");
-    Serial.println(i);
     epd_copy_to_framebuffer(fullscreenArea, backgrounds[i], fb);
 #else
     epd_hl_set_all_white(&hl);
@@ -348,9 +303,9 @@ void setup()
 #ifdef ENABLE_GARBAGE
     show_garbage();
 #endif
-    epd_poweron();
-    epd_hl_update_screen(&hl, MODE_GC16, temperature);
   }
+  epd_poweron();
+  epd_hl_update_screen(&hl, MODE_GC16, temperature);
 }
 
 void loop()

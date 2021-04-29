@@ -33,8 +33,10 @@ const EpdFontProperties centeredStyle = {
 
 void drawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *image);
 void drawIcon(int x, int y, const char** img, int width, int height);
+void write_string_with_outline(const EpdFont *font, const char *text, int *x, int *y, const EpdFontProperties *props);
 void print_with_shadow(const char *text, int *x, int *y, const EpdFont *font, bool outline=true);
 
+/*
 class CompatDisplay {
   public:
     CompatDisplay() {
@@ -116,4 +118,5 @@ class CompatDisplay {
 };
 
 static CompatDisplay display;
+*/
 #endif
