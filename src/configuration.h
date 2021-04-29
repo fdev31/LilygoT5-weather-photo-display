@@ -22,3 +22,5 @@
 // relative Y offset for the text
 #define WEATHER_CHART_VALUE_Y_OFFSET -10
 
+#define WEATHER_MOON_X_POS 750
+#define WEATHER_MOON_Y_POS 100

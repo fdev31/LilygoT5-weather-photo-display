@@ -17,12 +17,11 @@
 #include "configuration.h"
 
 // images
-//#include "background.h"
+
 #include "images/battery.h"
 #include "images/paper_icon.h"
 #include "images/recycle_icon.h"
 
-//#include "images/icon.h"
 #include "images/temp_icon.h"
 #include "images/wind_icon.h"
 #include "images/cloud_icon.h"
@@ -55,6 +54,27 @@ const uint8_t *backgrounds[] = {
 };
 
 #define NB_BACKGROUNDS 4
+
+#include "images/moon_first_q.h"
+#include "images/moon_full.h"
+#include "images/moon_last_q.h"
+#include "images/moon_new.h"
+#include "images/moon_wan_cre.h"
+#include "images/moon_wan_gib.h"
+#include "images/moon_wax_cre.h"
+#include "images/moon_wax_gib.h"
+
+const uint8_t *moon_phases[] = {
+  moon_new_data,
+  moon_wax_cre_data,
+  moon_first_q_data,
+  moon_wax_gib_data,
+  moon_full_data,
+  moon_wan_gib_data,
+  moon_last_q_data,
+  moon_wan_cre_data
+};
+
 
 EpdRect fullscreenArea = {
     .x = 0,
@@ -233,6 +253,7 @@ void show_weather() {
   y = EPD_HEIGHT-MOON_PHASES_BOTTOM_MARGIN;
   x += MOON_PHASES_LEFT_MARGIN;
   write_string_with_outline(&stdfont, weather.moonphase, &x, &y, &dateStyle);
+  drawImage(WEATHER_MOON_X_POS, WEATHER_MOON_Y_POS, moon_new_width, moon_new_height, moon_phases[weather.moonphaseIndex]);
 
   int topMargin = WEATHER_TOP_MARGIN;
   int leftMargin = WEATHER_LEFT_MARGIN;

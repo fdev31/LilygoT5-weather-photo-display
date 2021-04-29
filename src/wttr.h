@@ -32,6 +32,7 @@ public:
 typedef struct {
     char *title;
     char *moonphase;
+    uint8_t moonphaseIndex;
     char *observationDate;
     T_Snap now;
     T_Snap previsions[FORECAST_SIZE];

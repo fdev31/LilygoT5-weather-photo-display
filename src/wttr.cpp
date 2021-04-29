@@ -29,6 +29,35 @@ void cleanupWeatherData(WeatherSnapshot snap) {
   if (snap.moonphase) (snap.moonphase);
 }
 
+enum MoonPhases {
+  NEW,
+  WAXING_CRESCENT,
+  FIRST_QUARTER,
+  WAXING_GIBBOUS,
+  FULL,
+  WANING_GIBBOUS,
+  LAST_QUARTER,
+  WANING_CRESCENT
+};
+
+enum MoonPhases getPhaseFromString(char *description) {
+  if (description[0] == 'N') return NEW;
+  if (description[0] == 'L') return LAST_QUARTER;
+  if (description[0] == 'F') {
+    if (description[1] == 'U') return FULL;
+    return FIRST_QUARTER;
+  }
+  // W remaisn
+  if (description[2] == 'X') { // Waxing
+    if (description[7] == 'C') return WAXING_CRESCENT;
+    return WAXING_GIBBOUS;
+  } else {
+    if (description[7] == 'C') return WANING_CRESCENT;
+    return WANING_GIBBOUS;
+  }
+
+}
+
 WeatherSnapshot getWeather() {
     SpiRamJsonDocument doc(DOC_SIZE);
     WeatherSnapshot ret;
@@ -43,6 +72,7 @@ WeatherSnapshot getWeather() {
       deserializeJson(doc, cli);
       ret.title = strdup(doc["current_condition"][0]["weatherDesc"][0]["value"].as<String>().c_str());
       ret.moonphase = strdup(doc["weather"][0]["astronomy"][0]["moon_phase"].as<String>().c_str());
+      ret.moonphaseIndex = getPhaseFromString(ret.moonphase);
       ret.observationDate = strdup(doc["current_condition"][0]["localObsDateTime"].as<String>().c_str());
 
       ret.now.temperature = atoi(doc["current_condition"][0]["temp_C"].as<String>().c_str());
