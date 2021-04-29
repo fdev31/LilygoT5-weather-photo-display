@@ -157,15 +157,6 @@ void time_init() {
   }
 }
 
-void drawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *image) {
-  EpdRect area = {.x=x, .y=y, .width=w, .height=h-1};
-  /*
-  Serial.print("Corner Color=");
-  Serial.println(epd_get_pixel(0, 0, w, h, image));
-  */
-  epd_draw_rotated_transparent_image(area, image, fb, 64);
-}
-
 double get_battery_level()
 {
   uint16_t v = analogRead(BATT_PIN);

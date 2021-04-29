@@ -11,6 +11,10 @@ EpdFontProperties fontStyle = {
     '?',        // fallback
     (EpdFontFlags)0};
 
+void drawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *image) {
+  EpdRect area = {.x=x, .y=y, .width=w, .height=h-1};
+  epd_draw_rotated_transparent_image(area, image, fb, 64);
+}
 
 void drawIcon(int x, int y, const char** img, int width, int height) {
   EpdRect rect = {.x=x, .y=y, .width = width, .height = height};

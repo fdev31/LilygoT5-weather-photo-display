@@ -31,6 +31,7 @@ const EpdFontProperties centeredStyle = {
     '?', // fallback
     EPD_DRAW_ALIGN_CENTER};
 
+void drawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *image);
 void drawIcon(int x, int y, const char** img, int width, int height);
 void print_with_shadow(const char *text, int *x, int *y, const EpdFont *font, bool outline=true);
 
