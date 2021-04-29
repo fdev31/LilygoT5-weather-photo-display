@@ -43,20 +43,18 @@ Configuration config;
 #define BATTERY_POS 765
 
 #include "images/wallpaper1.h"
-//#include "images/wallpaper2.h"
-//#include "images/wallpaper3.h"
+#include "images/wallpaper2.h"
+#include "images/wallpaper3.h"
 #include "images/wallpaper4.h"
-//#include "images/wallpaper5.h"
 
 const uint8_t *backgrounds[] = {
   wallpaper1_data,
-//  wallpaper2_data,
-//  wallpaper3_data,
+  wallpaper2_data,
+  wallpaper3_data,
   wallpaper4_data,
-//  wallpaper5_data,
 };
 
-#define NB_BACKGROUNDS 2
+#define NB_BACKGROUNDS 4
 
 EpdRect fullscreenArea = {
     .x = 0,

@@ -2,7 +2,7 @@
 #define INTERVAL 2
 
 // optional features
-#define ENABLE_GARBAGE 1
+//#define ENABLE_GARBAGE 1
 #define GARBAGE_X_POSITION 912
 #define GARBAGE_Y_POSITION 460
 
