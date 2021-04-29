@@ -15,8 +15,19 @@
 #include "wttr.h" // weather info, check wttr.in
 #include "configserver.h"
 #include "configuration.h"
-#include "background.h"
 
+// images
+//#include "background.h"
+#include "images/battery.h"
+#include "images/paper_icon.h"
+#include "images/recycle_icon.h"
+
+//#include "images/icon.h"
+#include "images/temp_icon.h"
+#include "images/wind_icon.h"
+#include "images/cloud_icon.h"
+#include "images/rain_icon.h"
+//#include "images/humid_icon.h"
 
 uint64_t WAKEUP_INTERVAL = (uint64_t) 1000*1000*3600*INTERVAL;
 const char* ntpServer = "pool.ntp.org";
@@ -30,6 +41,22 @@ int vref = 1100;
 Configuration config;
 #define BATT_PIN            36
 #define BATTERY_POS 765
+
+#include "images/wallpaper1.h"
+//#include "images/wallpaper2.h"
+//#include "images/wallpaper3.h"
+#include "images/wallpaper4.h"
+//#include "images/wallpaper5.h"
+
+const uint8_t *backgrounds[] = {
+  wallpaper1_data,
+//  wallpaper2_data,
+//  wallpaper3_data,
+  wallpaper4_data,
+//  wallpaper5_data,
+};
+
+#define NB_BACKGROUNDS 2
 
 EpdRect fullscreenArea = {
     .x = 0,
@@ -50,6 +77,33 @@ void correct_adc_reference()
         Serial.printf("eFuse Vref:%u mV", adc_chars.vref);
         vref = adc_chars.vref;
     }
+}
+void write_string_with_outline(const EpdFont *font, const char *text, int *x, int *y, const EpdFontProperties *props) {
+  int xx = *x-2;
+  int yy = *y-2;
+
+  EpdFontProperties backProps = EpdFontProperties(*props);
+
+  if (props->fg_color == BLACK) {
+    backProps.fg_color = WHITE;
+  } else {
+    backProps.fg_color = BLACK;
+  }
+
+    epd_write_string(font, text, &xx, &yy, fb, &backProps);
+    xx = *x+2;
+    yy = *y+2;
+    epd_write_string(font, text, &xx, &yy, fb, &backProps);
+
+    xx = *x + 2;
+    yy = *y - 2;
+    epd_write_string(font, text, &xx, &yy, fb, &backProps);
+
+    xx = *x - 2;
+    yy = *y + 2;
+    epd_write_string(font, text, &xx, &yy, fb, &backProps);
+
+    epd_write_string(font, text, x, y, fb, props);
 }
 
 void basic_init() {
@@ -89,6 +143,15 @@ void time_init() {
   }
 }
 
+void drawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *image) {
+  EpdRect area = {.x=x, .y=y, .width=w, .height=h-1};
+  /*
+  Serial.print("Corner Color=");
+  Serial.println(epd_get_pixel(0, 0, w, h, image));
+  */
+  epd_draw_rotated_transparent_image(area, image, fb, 64);
+}
+
 double get_battery_level()
 {
   uint16_t v = analogRead(BATT_PIN);
@@ -104,11 +167,14 @@ void show_battery_level()
   else if (w < 0) w = 0;
   char text[50];
   sprintf(text, "%.2fV", level);
-  int x = EPD_WIDTH - 100;
-  int y = 40;
-  epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
+  int x = BATTERY_X_POSITION;
+  int y = 35 + BATTERY_Y_POSITION;
+
+  drawImage(x+5, BATTERY_Y_POSITION, battery_width, battery_height, battery_data);
+
+  write_string_with_outline(&stdfont, text, &x, &y, &rightAlignedStyle);
   if (w) {
-    EpdRect battery_rect = {.x = 870, .y = 17, .width = w, .height = 15};
+    EpdRect battery_rect = {.x = BATTERY_X_POSITION+10, .y = 5+BATTERY_Y_POSITION, .width = w, .height = 30 };
     epd_fill_rect(battery_rect, 1, fb);
   }
 }
@@ -119,27 +185,30 @@ void show_garbage() {
   GarbageDays gd = check_garbage(timeinfo);
   //    drawIcon(EPD_WIDTH - SMALL_ICON, EPD_HEIGHT - SMALL_ICON, (const char **)img, SMALL_ICON, SMALL_ICON);
 
-  x = 912;
-  y = 456;
-  epd_write_string(&stdfont, gd.paper, &x, &y, fb, &leftAlignedStyle);
+  x = GARBAGE_X_POSITION;
+  y = GARBAGE_Y_POSITION;
+  drawImage(x-paper_icon_width, y-(paper_icon_height*0.5)-10, paper_icon_width, paper_icon_height, paper_icon_data);
+  write_string_with_outline(&stdfont, gd.paper, &x, &y, &leftAlignedStyle);
 
-  x = 912;
-  y = 505;
-  epd_write_string(&stdfont, gd.std, &x, &y, fb, &leftAlignedStyle);
+  x = GARBAGE_X_POSITION;
+  y = GARBAGE_Y_POSITION + paper_icon_height;
+  drawImage(x-recycle_icon_width, y-(recycle_icon_height*0.5)-10, recycle_icon_width, recycle_icon_height, recycle_icon_data);
+  write_string_with_outline(&stdfont, gd.std, &x, &y, &leftAlignedStyle);
   free_garbage(&gd);
 }
 
 void drawWeatherChart(int x, int y, int initVal, int increment, T_Snap previsions[], int (*getFunc)(int, T_Snap[])) {
   int i=0;
   int prevVal = y-initVal;
-  int thickness = 1;
+  int thickness = 2;
 
   epd_draw_line(x, prevVal, x + FORECAST_NB_DAYS*FORECAST_DAILY_SNAPS*increment, prevVal, 127, fb);
   for (int daycount=0; daycount<FORECAST_NB_DAYS; daycount++) {
     for (int snapcount=0; snapcount<FORECAST_DAILY_SNAPS; snapcount++) {
       int val = getFunc(i, previsions);
       val = y-val;
-      epd_draw_line(x, prevVal -1, x + increment, val -1, 15, fb);
+      epd_draw_line(x, prevVal - 1, x + increment, val -1, 255, fb);
+      epd_draw_line(x, prevVal + thickness, x + increment, val + thickness, 255, fb);
       for (int i=0; i<thickness; i++)
         epd_draw_line(x, prevVal+i, x + increment, val+i, 0, fb);
       prevVal = val;
@@ -157,22 +226,24 @@ void show_weather() {
   int x = BATTERY_POS/2, y = 70;
   char text[50];
 
-  epd_write_string(&titlefont, weather.title, &x, &y, fb, &centeredStyle);
+  write_string_with_outline(&titlefont, weather.title, &x, &y, &centeredStyle);
 
   x=6;
-  y = EPD_HEIGHT-6;
+  y = EPD_HEIGHT-MOON_PHASES_BOTTOM_MARGIN;
   EpdFontProperties dateStyle = { WHITE, 8, '?', EPD_DRAW_ALIGN_LEFT};
-  epd_write_string(&stdfont, weather.observationDate, &x, &y, fb, &dateStyle);
-  y = EPD_HEIGHT-6;
-  x += 100;
-  epd_write_string(&stdfont, weather.moonphase, &x, &y, fb, &dateStyle);
+  write_string_with_outline(&stdfont, weather.observationDate, &x, &y, &dateStyle);
+  y = EPD_HEIGHT-MOON_PHASES_BOTTOM_MARGIN;
+  x += MOON_PHASES_LEFT_MARGIN;
+  write_string_with_outline(&stdfont, weather.moonphase, &x, &y, &dateStyle);
 
-  int topMargin = 120;
-  int leftMargin = 65;
+  int topMargin = WEATHER_TOP_MARGIN;
+  int leftMargin = WEATHER_LEFT_MARGIN;
 
-  int segmentSize=10;
-  int chartSpacing = 60;
-  int chartLeftMargin = 150;
+  int segmentSize = WEATHER_CHART_SEGMENT_SIZE;
+  int chartSpacing = WEATHER_CHART_Y_SPACING;
+  int chartLeftMargin = WEATHER_CHART_LEFT_MARGIN;
+  int iconSpacing = chartSpacing/2;
+
 
   // background
   x = chartLeftMargin; y = topMargin;
@@ -183,7 +254,9 @@ void show_weather() {
   // 1st
   x = leftMargin;
   weather.now.getTemperature((char *)&text);
-  epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
+  drawImage(x+WEATHER_CHART_ICON_LEFT_MARGIN, y-iconSpacing, temp_icon_width, temp_icon_height, temp_icon_data);
+  y += WEATHER_CHART_VALUE_Y_OFFSET;
+  write_string_with_outline(&stdfont, text, &x, &y, &rightAlignedStyle);
   drawWeatherChart(chartLeftMargin, topMargin,
             weather.now.temperature*2,
             segmentSize, weather.previsions,
@@ -192,7 +265,9 @@ void show_weather() {
   // 2nd
   x = leftMargin; y = topMargin + chartSpacing;
   weather.now.getWind((char *)&text);
-  epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
+  drawImage(x+WEATHER_CHART_ICON_LEFT_MARGIN, y-iconSpacing, wind_icon_width, wind_icon_height, wind_icon_data);
+  y += WEATHER_CHART_VALUE_Y_OFFSET;
+  write_string_with_outline(&stdfont, text, &x, &y, &rightAlignedStyle);
   drawWeatherChart(chartLeftMargin, topMargin + chartSpacing,
             weather.now.wind,
             segmentSize, weather.previsions,
@@ -201,7 +276,9 @@ void show_weather() {
   // 3rd
   x = leftMargin; y = topMargin + (chartSpacing*2);
   weather.now.getCloud((char *)&text);
-  epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
+  drawImage(x+WEATHER_CHART_ICON_LEFT_MARGIN, y-iconSpacing, cloud_icon_width, cloud_icon_height, cloud_icon_data);
+  y += WEATHER_CHART_VALUE_Y_OFFSET;
+  write_string_with_outline(&stdfont, text, &x, &y, &rightAlignedStyle);
   drawWeatherChart(chartLeftMargin, topMargin + (chartSpacing*2),
             weather.now.cloudcover/2,
             segmentSize, weather.previsions,
@@ -210,23 +287,14 @@ void show_weather() {
   // 4th
   x = leftMargin; y = topMargin + (chartSpacing*3);
   weather.now.getPrecipitation((char *)&text);
-  epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
+  drawImage(x+WEATHER_CHART_ICON_LEFT_MARGIN, y-iconSpacing, rain_icon_width, rain_icon_height, rain_icon_data);
+  y += WEATHER_CHART_VALUE_Y_OFFSET;
+  write_string_with_outline(&stdfont, text, &x, &y, &rightAlignedStyle);
   drawWeatherChart(chartLeftMargin, topMargin + (chartSpacing*3),
             weather.now.precipitation*10,
             segmentSize, weather.previsions,
             [](int i, T_Snap previsions[]) {return int(previsions[i].precipitation*10.0);}
             );
-  /*
-  // 5th
-  x = leftMargin; y = topMargin + (chartSpacing*4);
-  weather.now.getHumidity((char *)&text);
-  epd_write_string(&stdfont, text, &x, &y, fb, &rightAlignedStyle);
-  drawWeatherChart(chartLeftMargin, topMargin + (chartSpacing*4),
-            weather.now.humidity/2,
-            segmentSize, weather.previsions,
-            [](int i, T_Snap previsions[]) {return previsions[i].humidity/2;}
-            );
-            */
   cleanupWeatherData(weather);
 }
 
@@ -234,10 +302,10 @@ void setup()
 {
   basic_init();
   display_init();
-  epd_poweron();
   if (!config.valid || WiFi.waitForConnectResult() != WL_CONNECTED)
   {
     Serial.println("Invalid configuration or no connexion, running settings...");
+    epd_poweron();
     epd_fullclear(&hl, temperature);
     start_settings_mode();
     settings_mode = true;
@@ -245,11 +313,17 @@ void setup()
     delay(50);
     time_init();
     epd_fullclear(&hl, temperature);
-    epd_copy_to_framebuffer(fullscreenArea, background_data, epd_hl_get_framebuffer(&hl));
+    int i = random(0, NB_BACKGROUNDS);
+    Serial.print("Background:");
+    Serial.println(i);
+    epd_copy_to_framebuffer(fullscreenArea, backgrounds[i], fb);
     show_weather();
     correct_adc_reference();
     show_battery_level();
+#ifdef ENABLE_GARBAGE
     show_garbage();
+#endif
+    epd_poweron();
     epd_hl_update_screen(&hl, MODE_GC16, temperature);
   }
 }

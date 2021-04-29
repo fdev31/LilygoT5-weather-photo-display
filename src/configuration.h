@@ -1,5 +1,24 @@
 // Refresh every "INTERVAL" hours
-#define INTERVAL 1
-#define ENABLE_WEATHER 1
+#define INTERVAL 2
+
+// optional features
 #define ENABLE_GARBAGE 1
+#define GARBAGE_X_POSITION 912
+#define GARBAGE_Y_POSITION 460
+
+// base features layout
+#define BATTERY_X_POSITION 860
+#define BATTERY_Y_POSITION 5
+
+#define MOON_PHASES_LEFT_MARGIN 100
+#define MOON_PHASES_BOTTOM_MARGIN 25
+
+#define WEATHER_TOP_MARGIN 140
+#define WEATHER_LEFT_MARGIN 65
+#define WEATHER_CHART_SEGMENT_SIZE 10
+#define WEATHER_CHART_Y_SPACING 100
+#define WEATHER_CHART_LEFT_MARGIN 150
+#define WEATHER_CHART_ICON_LEFT_MARGIN 20
+// relative Y offset for the text
+#define WEATHER_CHART_VALUE_Y_OFFSET -10
 
