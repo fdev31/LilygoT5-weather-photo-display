@@ -306,6 +306,7 @@ void setup()
   }
   epd_poweron();
   epd_hl_update_screen(&hl, MODE_GC16, temperature);
+  if (settings_mode) epd_poweroff();
 }
 
 void loop()

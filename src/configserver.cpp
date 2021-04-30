@@ -48,7 +48,7 @@ void index_html() {
 }
 
 void resetX(int *x) {
-    *x = 10;
+    *x = 40;
 }
 
 void start_settings_mode() {
@@ -62,7 +62,7 @@ void start_settings_mode() {
     WiFi.persistent(false);
     WiFi.softAP(ssid, password);
 
-    int x, y=30;
+    int x, y=100;
     resetX(&x);
 
     EpdFontProperties fontStyle = {
@@ -71,21 +71,24 @@ void start_settings_mode() {
         '?',        // fallback
         (EpdFontFlags)0};
 
-    epd_write_string(&stdfont, "Connection failed, please connect your wifi:", &x, &y, fb, &fontStyle);
-    resetX(&x);
-    epd_write_string(&stdfont, "Access point:", &x, &y, fb, &fontStyle);
-    resetX(&x);
+    epd_write_string(&stdfont, "Connection failed, please connect to WiFi:", &x, &y, fb, &fontStyle);
+    x = 100;
+    y += 40;
     epd_write_string(&titlefont, ssid, &x, &y, fb, &fontStyle);
-    resetX(&x);
+    y -= 20;
+    x = 100;
+    int yy = y;
     epd_write_string(&stdfont, "Password:", &x, &y, fb, &fontStyle);
-    resetX(&x);
+    y = yy;
     epd_write_string(&titlefont, password, &x, &y, fb, &fontStyle);
     resetX(&x);
-    epd_write_string(&stdfont, "... and then open:", &x, &y, fb, &fontStyle);
-    resetX(&x);
+    yy = y;
+    epd_write_string(&stdfont, "Then open", &x, &y, fb, &fontStyle);
+    x += 25;
+    y = yy;
     epd_write_string(&OpenSans24, "http://192.168.1.1/", &x, &y, fb, &fontStyle);
     resetX(&x);
-    epd_write_string(&stdfont, "... to enter your local WiFi credentials", &x, &y, fb, &fontStyle);
+    epd_write_string(&stdfont, "to setup your local WiFi credentials", &x, &y, fb, &fontStyle);
     WiFi.softAPConfig(local_ip, gateway, subnet);
     server.on("/", index_html);
     server.begin();
