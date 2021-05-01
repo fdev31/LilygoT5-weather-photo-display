@@ -220,12 +220,10 @@ void show_weather() {
   int iconSpacing = chartSpacing/2;
 
 
-  // background
-  x = chartLeftMargin; y = topMargin;
-  for (int daycount=1; daycount<FORECAST_NB_DAYS; daycount++) {
-    epd_draw_line(x, y, x, y+(chartSpacing*3), 50, fb);
-    x+= FORECAST_DAILY_SNAPS*segmentSize;
-  }
+  // background line (24h limit)
+  x = chartLeftMargin + FORECAST_DAILY_SNAPS*segmentSize;
+  y = topMargin;
+  epd_draw_line(x, y, x, y+(chartSpacing*3), 50, fb);
   // 1st
   x = leftMargin;
   weather.now.getTemperature((char *)&text);
