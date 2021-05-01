@@ -11,8 +11,12 @@ function make_dot_h() {
     rm "$out"
 }
 
+if [ -z "$1" ]; then
 
-for fname in images/*.png; do
-    echo "$fname..."
-    make_dot_h "$fname"
-done
+    for fname in images/*.png; do
+        echo "$fname..."
+        make_dot_h "$fname"
+    done
+else
+    make_dot_h $*
+fi
