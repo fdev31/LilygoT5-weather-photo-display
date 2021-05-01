@@ -40,7 +40,8 @@ const int   daylightOffset_sec = 3600;
 int settings_mode = false;
 static struct tm timeinfo; // today's date
 extern int temperature;
-int isMaintenanceWakup = false;
+bool isMaintenanceWakup = false;
+bool critical_battery = false;
 int vref = 1100;
 Configuration config;
 #define BATT_PIN            36
@@ -126,9 +127,13 @@ double get_battery_level()
   return ((float)v / 4095.0) * 2.0 * 3.3 * (vref / 1000.0);
 }
 
-void show_battery_level()
+void show_battery_level(bool nodisplay=false)
 {
   double level = get_battery_level();
+  if (level <= 3.1) {
+      critical_battery = true;
+  }
+  if (nodisplay) return;
   int w = (level - 3.0)*47.5; // 57 pixels width, 1.2 == 100%
   if (w > 57) w = 57;
   else if (w < 0) w = 0;
@@ -294,13 +299,26 @@ void setup()
 #ifdef ENABLE_WEATHER
     show_weather();
 #endif
-#ifdef ENABLE_BATTERY
     correct_adc_reference();
+#ifdef ENABLE_BATTERY
     show_battery_level();
+#else
+    show_battery_level(true);
 #endif
 #ifdef ENABLE_GARBAGE
     show_garbage();
 #endif
+  }
+  if (critical_battery) {
+      int x = EPD_WIDTH/2;
+      int y = EPD_HEIGHT/2 - 100;
+      write_string_with_outline(&titlefont, "CRITICAL", &x, &y, &centeredStyle);
+      x = EPD_WIDTH/2;
+      y = EPD_HEIGHT/2;
+      write_string_with_outline(&titlefont, "BATTERY", &x, &y, &centeredStyle);
+      x = EPD_WIDTH/2;
+      y = EPD_HEIGHT/2 + 100;
+      write_string_with_outline(&titlefont, "LEVEL", &x, &y, &centeredStyle);
   }
   epd_poweron();
   epd_hl_update_screen(&hl, MODE_GC16, temperature);
@@ -315,7 +333,7 @@ void loop()
     WiFi.disconnect();
     WiFi.mode(WIFI_OFF);
     epd_poweroff();
-    esp_sleep_enable_timer_wakeup(WAKEUP_INTERVAL);
+    if (!critical_battery) esp_sleep_enable_timer_wakeup(WAKEUP_INTERVAL);
     esp_deep_sleep_start();
   }
 }
