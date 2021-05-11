@@ -71,6 +71,9 @@ WeatherSnapshot getWeather() {
 
       deserializeJson(doc, cli);
       ret.title = strdup(doc["current_condition"][0]["weatherDesc"][0]["value"].as<String>().c_str());
+      for (int i=0; ret.title[i]; i++) {
+          if (ret.title[i] == ',') ret.title[i-1] = 0;
+      }
       ret.moonphase = strdup(doc["weather"][0]["astronomy"][0]["moon_phase"].as<String>().c_str());
       ret.moonphaseIndex = getPhaseFromString(ret.moonphase);
       ret.observationDate = strdup(doc["current_condition"][0]["localObsDateTime"].as<String>().c_str());
