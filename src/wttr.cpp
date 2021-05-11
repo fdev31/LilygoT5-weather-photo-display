@@ -44,11 +44,11 @@ enum MoonPhases getPhaseFromString(char *description) {
   if (description[0] == 'N') return NEW;
   if (description[0] == 'L') return LAST_QUARTER;
   if (description[0] == 'F') {
-    if (description[1] == 'U') return FULL;
+    if (description[1] == 'u') return FULL;
     return FIRST_QUARTER;
   }
   // W remaisn
-  if (description[2] == 'X') { // Waxing
+  if (description[2] == 'x') { // Waxing
     if (description[7] == 'C') return WAXING_CRESCENT;
     return WAXING_GIBBOUS;
   } else {
