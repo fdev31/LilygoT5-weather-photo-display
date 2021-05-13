@@ -25,3 +25,7 @@ You will need *platformio* installed
 
     pio run -t upload
 
+
+# STL files (to 3D print)
+
+https://www.thingiverse.com/thing:4857644
