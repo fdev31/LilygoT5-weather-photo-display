@@ -61,14 +61,29 @@ enum MoonPhases getPhaseFromString(char *description) {
 WeatherSnapshot getWeather() {
     SpiRamJsonDocument doc(DOC_SIZE);
     WeatherSnapshot ret;
-    HTTPClient http;
+    WiFiClientSecure cli;
 
-    http.begin("http://wttr.in/?format=j1");
-    int httpCode = http.GET();
-    if (httpCode == 200)
-    {
-      WiFiClient cli = http.getStream();
+    cli.setInsecure();
+    if(cli.connect("wttr.in", 443)) {
+        cli.println("GET /?format=j1 HTTP/1.0");
+        cli.println("Host: wttr.in");
+        cli.println();
 
+        // Skip HTTP headers:
+        char c, b;
+        b = 0;
+        char newLines = 0;
+        while (newLines < 2) {
+            c = cli.read();
+            if (c != '\r') {
+                if (c == '\n' && b == '\r') {
+                    newLines ++;
+                } else {
+                    newLines = 0;
+                }
+            }
+            b = c;
+        }
       deserializeJson(doc, cli);
       ret.title = strdup(doc["current_condition"][0]["weatherDesc"][0]["value"].as<String>().c_str());
       for (int i=0; ret.title[i]; i++) {
