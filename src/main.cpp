@@ -108,7 +108,7 @@ void basic_init() {
 
 void display_init() {
   epd_init(EPD_OPTIONS_DEFAULT);
-  hl = epd_hl_init(EPD_BUILTIN_WAVEFORM);
+  hl = epd_hl_init(&epdiy_ED047TC1);
   fb = epd_hl_get_framebuffer(&hl);
 }
 
