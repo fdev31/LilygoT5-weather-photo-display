@@ -35,7 +35,7 @@ const uint8_t *backgrounds[] = {
 
 // Layout / positions
 
-#define GARBAGE_X_POSITION 912
+#define GARBAGE_X_POSITION 890
 #define GARBAGE_Y_POSITION 460
 
 // base features layout
