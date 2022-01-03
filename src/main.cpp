@@ -330,13 +330,18 @@ void setup()
   }
   epd_poweron();
   epd_hl_update_screen(&hl, MODE_GC16, temperature);
-  if (settings_mode) epd_poweroff();
+  epd_poweroff();
 }
 
 void loop()
 {
+  // Serves HTTP requests or poweroff
   if (settings_mode) {
     handle_configserver();
+    if ( millis() > 1000*60*10 ) { // 10 minutes only
+        // then off
+        settings_mode = false;
+    }
   } else {
     WiFi.disconnect();
     WiFi.mode(WIFI_OFF);
