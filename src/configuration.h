@@ -1,6 +1,8 @@
 // Refresh every "INTERVAL" hours
 #define INTERVAL 2
 
+#define ENABLE_SERIAL_DEBUG 1
+
 // feature switches
 
 #define ENABLE_BACKGROUND

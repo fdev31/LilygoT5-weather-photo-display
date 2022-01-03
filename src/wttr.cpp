@@ -113,7 +113,9 @@ WeatherSnapshot getWeather() {
         }
       }
     } else {
+      #if ENABLE_SERIAL_DEBUG
       Serial.println("Error getting weather data !!");
+      #endif
       ret.title = NULL;
     }
     return ret;

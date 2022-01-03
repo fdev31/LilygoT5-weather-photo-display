@@ -93,9 +93,7 @@ void correct_adc_reference()
     }
 }
 
-void basic_init() {
-  psramInit();
-  isMaintenanceWakup = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER;
+void wifi_connect() {
   // WiFi setup
   WiFi.mode(WIFI_STA);
 
@@ -279,8 +277,18 @@ void show_weather() {
 
 void setup()
 {
-  basic_init();
+#if ENABLE_SERIAL_DEBUG
+  Serial.begin(115200);
+#endif
+
+  psramInit();
+  isMaintenanceWakup = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER;
+  wifi_connect();
   display_init();
+
+  if (config.valid && WiFi.waitForConnectResult() != WL_CONNECTED) { // retry
+    wifi_connect();
+  }
   if (!config.valid || WiFi.waitForConnectResult() != WL_CONNECTED)
   {
     epd_fullclear(&hl, temperature);
