@@ -4,6 +4,8 @@
 #include "display.h"
 #include "garbage.h"
 
+#define GARBAGE_LOOKAHEAD 15
+
 void dumpDate(const char *prefix, struct tm d);
 
 char *pickupText = NULL, _pickupText[100];
@@ -59,7 +61,7 @@ GarbageDays check_garbage(struct tm timeinfo) {
   sprintf(tomorrow, "%d-%02d-%02d", tmptimeinfo.tm_year + 1900, tmptimeinfo.tm_mon + 1, tmptimeinfo.tm_mday);
 
   /* end date */
-  tmptimeinfo.tm_mday += 15; /* 15 days lookup */
+  tmptimeinfo.tm_mday += GARBAGE_LOOKAHEAD ; /* 15 days lookup */
   mktime(&tmptimeinfo);
   sprintf(end_date, "%d-%02d-%02d", tmptimeinfo.tm_year + 1900, tmptimeinfo.tm_mon + 1, tmptimeinfo.tm_mday);
 
@@ -107,5 +109,7 @@ GarbageDays check_garbage(struct tm timeinfo) {
   }
   http.end();
   if (img) ret.image = img;
+  if (ret.paper == NULL) ret.paper = strdup("15+");
+  if (ret.std == NULL) ret.std = strdup("15+");
   return ret;
 }
