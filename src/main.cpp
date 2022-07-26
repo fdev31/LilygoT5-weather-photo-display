@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 // esp
-#include "esp_himem.h"
-#include "esp_spiram.h"
+#include "esp32/himem.h"
+#include "esp32/spiram.h"
 // battery
 #include <driver/adc.h>
 #include "esp_adc_cal.h"

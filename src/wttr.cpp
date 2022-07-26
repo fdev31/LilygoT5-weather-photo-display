@@ -2,8 +2,8 @@
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <iostream>
-#include "esp_himem.h"
-#include "esp_spiram.h"
+#include "esp32/himem.h"
+#include "esp32/spiram.h"
 
 #include "wttr.h"
 
