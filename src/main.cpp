@@ -275,6 +275,14 @@ void show_weather() {
 }
 #endif
 
+void setupSleepMode() {
+    WiFi.disconnect();
+    WiFi.mode(WIFI_OFF);
+    epd_poweroff();
+    if (!critical_battery) esp_sleep_enable_timer_wakeup(WAKEUP_INTERVAL);
+    esp_deep_sleep_start();
+}
+
 void setup()
 {
 #if ENABLE_SERIAL_DEBUG
@@ -304,6 +312,7 @@ void setup()
 #else
     epd_hl_set_all_white(&hl);
 #endif
+
 #ifdef ENABLE_WEATHER
     show_weather();
 #endif
@@ -343,10 +352,7 @@ void loop()
         settings_mode = false;
     }
   } else {
-    WiFi.disconnect();
-    WiFi.mode(WIFI_OFF);
-    epd_poweroff();
-    if (!critical_battery) esp_sleep_enable_timer_wakeup(WAKEUP_INTERVAL);
-    esp_deep_sleep_start();
+    setupSleepMode();
   }
 }
+
