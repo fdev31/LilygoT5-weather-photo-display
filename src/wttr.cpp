@@ -62,57 +62,68 @@ WeatherSnapshot getWeather() {
     SpiRamJsonDocument doc(DOC_SIZE);
     WeatherSnapshot ret;
     WiFiClientSecure cli;
+    int success = 0;
 
     cli.setInsecure();
-    if(cli.connect("wttr.in", 443)) {
-        cli.println("GET /?format=j1 HTTP/1.0");
-        cli.println("Host: wttr.in");
-        cli.println();
+    success = cli.connect("wttr.in", 443);
+    if (success) {
+      cli.setTimeout(10000);
+      cli.println("GET /?format=j1 HTTP/1.0");
+      cli.println("Host: wttr.in");
+      cli.println();
 
-        // Skip HTTP headers:
-        char c, b;
-        b = 0;
-        char newLines = 0;
-        while (newLines < 2) {
-            c = cli.read();
-            if (c != '\r') {
-                if (c == '\n' && b == '\r') {
-                    newLines ++;
-                } else {
-                    newLines = 0;
-                }
-            }
-            b = c;
+      // Skip HTTP headers:
+      char c, b;
+      int maxSkip=60000;
+      b = 0;
+      char newLines = 0;
+      while (newLines < 2) {
+        if(!maxSkip--) {
+          success = false;
+          break;
         }
-      deserializeJson(doc, cli);
-      ret.title = strdup(doc["current_condition"][0]["weatherDesc"][0]["value"].as<String>().c_str());
-      for (int i=0; ret.title[i]; i++) {
+        c = cli.read();
+        if (c != '\r') {
+          if (c == '\n' && b == '\r') {
+            newLines ++;
+          } else {
+            newLines = 0;
+          }
+        }
+        b = c;
+      }
+      if (success) {
+        deserializeJson(doc, cli);
+        ret.title = strdup(doc["current_condition"][0]["weatherDesc"][0]["value"].as<String>().c_str());
+        for (int i=0; ret.title[i]; i++) {
           if (ret.title[i] == ',') ret.title[i] = 0;
-      }
-      ret.moonphase = strdup(doc["weather"][0]["astronomy"][0]["moon_phase"].as<String>().c_str());
-      ret.moonphaseIndex = getPhaseFromString(ret.moonphase);
-      ret.observationDate = strdup(doc["current_condition"][0]["localObsDateTime"].as<String>().c_str());
+        }
+        ret.moonphase = strdup(doc["weather"][0]["astronomy"][0]["moon_phase"].as<String>().c_str());
+        ret.moonphaseIndex = getPhaseFromString(ret.moonphase);
+        ret.observationDate = strdup(doc["current_condition"][0]["localObsDateTime"].as<String>().c_str());
 
-      ret.now.temperature = atoi(doc["current_condition"][0]["temp_C"].as<String>().c_str());
-      ret.now.wind = atoi(doc["current_condition"][0]["windspeedKmph"].as<String>().c_str());
-      ret.now.cloudcover = atoi(doc["current_condition"][0]["cloudcover"].as<String>().c_str());
-      ret.now.precipitation = atoi(doc["current_condition"][0]["precipMM"].as<String>().c_str());
-//      ret.now.humidity = atoi(doc["current_condition"][0]["humidity"].as<String>().c_str());
+        ret.now.temperature = atoi(doc["current_condition"][0]["temp_C"].as<String>().c_str());
+        ret.now.wind = atoi(doc["current_condition"][0]["windspeedKmph"].as<String>().c_str());
+        ret.now.cloudcover = atoi(doc["current_condition"][0]["cloudcover"].as<String>().c_str());
+        ret.now.precipitation = atoi(doc["current_condition"][0]["precipMM"].as<String>().c_str());
+        //      ret.now.humidity = atoi(doc["current_condition"][0]["humidity"].as<String>().c_str());
 
-      int i=0;
-      for (int nbday=0; nbday<FORECAST_NB_DAYS; nbday++) {
-        JsonArray entry = doc["weather"][nbday]["hourly"];
-        for (int houridx = 0; houridx < FORECAST_DAILY_SNAPS; houridx++)
-        {
-          ret.previsions[i].temperature = atoi(entry[houridx]["tempC"].as<String>().c_str());
-          ret.previsions[i].wind = atoi(entry[houridx]["WindGustKmph"].as<String>().c_str());
-          ret.previsions[i].cloudcover = atoi(entry[houridx]["cloudcover"].as<String>().c_str());
-          ret.previsions[i].precipitation = atof(entry[houridx]["precipMM"].as<String>().c_str());
-//          ret.previsions[i].humidity = atoi(entry[houridx]["humidity"].as<String>().c_str());
-          i++;
+        int i=0;
+        for (int nbday=0; nbday<FORECAST_NB_DAYS; nbday++) {
+          JsonArray entry = doc["weather"][nbday]["hourly"];
+          for (int houridx = 0; houridx < FORECAST_DAILY_SNAPS; houridx++)
+          {
+            ret.previsions[i].temperature = atoi(entry[houridx]["tempC"].as<String>().c_str());
+            ret.previsions[i].wind = atoi(entry[houridx]["WindGustKmph"].as<String>().c_str());
+            ret.previsions[i].cloudcover = atoi(entry[houridx]["cloudcover"].as<String>().c_str());
+            ret.previsions[i].precipitation = atof(entry[houridx]["precipMM"].as<String>().c_str());
+            //          ret.previsions[i].humidity = atoi(entry[houridx]["humidity"].as<String>().c_str());
+            i++;
+          }
         }
       }
-    } else {
+    }
+    if (!success) {
       #if ENABLE_SERIAL_DEBUG
       Serial.println("Error getting weather data !!");
       #endif
