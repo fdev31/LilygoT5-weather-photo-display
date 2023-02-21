@@ -1,7 +1,7 @@
 // Refresh every "INTERVAL" hours
-#define INTERVAL 2
+#define INTERVAL 8
 
-#define ENABLE_SERIAL_DEBUG 1
+#define ENABLE_SERIAL_DEBUG 0
 
 // feature switches
 
