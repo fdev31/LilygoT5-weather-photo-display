@@ -175,7 +175,7 @@ void show_garbage() {
 void drawWeatherChart(int x, int y, int initVal, int increment, T_Snap previsions[], int (*getFunc)(int, T_Snap[])) {
   int i=0;
   int prevVal = y-initVal;
-  int thickness = 2;
+  int thickness = WEATHER_CHART_THICKNESS;
 
   epd_draw_line(x, prevVal, x + FORECAST_NB_DAYS*FORECAST_DAILY_SNAPS*increment, prevVal, 127, fb);
   for (int daycount=0; daycount<FORECAST_NB_DAYS; daycount++) {
@@ -183,7 +183,12 @@ void drawWeatherChart(int x, int y, int initVal, int increment, T_Snap prevision
       int val = getFunc(i, previsions);
       val = y-val;
       epd_draw_line(x, prevVal - 1, x + increment, val -1, 255, fb);
-      epd_draw_line(x, prevVal + thickness, x + increment, val + thickness, 255, fb);
+      epd_draw_line(x, prevVal - 2, x + increment, val -1, 255, fb);
+      epd_draw_line(x, prevVal - 3, x + increment, val -1, 255, fb);
+      epd_draw_line(x, prevVal + thickness +1, x + increment, val + thickness, 255, fb);
+      epd_draw_line(x, prevVal + thickness +2, x + increment, val + thickness, 255, fb);
+      epd_draw_line(x, prevVal + thickness +3, x + increment, val + thickness, 255, fb);
+
       for (int i=0; i<thickness; i++)
         epd_draw_line(x, prevVal+i, x + increment, val+i, 0, fb);
       prevVal = val;
